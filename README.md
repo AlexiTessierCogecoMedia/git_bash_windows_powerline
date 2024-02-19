@@ -11,8 +11,11 @@ I recommend the following:
 
 ```bash
 cd $HOME
+rm -rf .bash/themes/git_bash_windows_powerline
 mkdir -p .bash/themes/git_bash_windows_powerline
-git clone https://github.com/diesire/git_bash_windows_powerline.git .bash/themes/git_bash_windows_powerline
+git clone https://github.com/AlexiTessierCogecoMedia/git_bash_windows_powerline.git .bash/themes/git_bash_windows_powerline
+cd .bash/themes/git_bash_windows_powerline
+git checkout feature/python-venv-support
 ```
 
 then add the following to your .bashrc:
