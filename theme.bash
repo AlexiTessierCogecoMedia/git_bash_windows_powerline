@@ -21,7 +21,7 @@ readonly USER_INFO_PROMPT_COLOR="C Bl"
 readonly VENV_PROMPT_COLOR="M Y"
 readonly PYTHON_SYMBOL=''
 
-readonly SCM_GIT_CHAR=" "
+SCM_GIT_CHAR=" "
 readonly NPM_PROMPT_COLOR="Y Bl"
 
 readonly SCM_GIT_CHAR="${PADDING}"
