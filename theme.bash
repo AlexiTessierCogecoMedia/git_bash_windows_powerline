@@ -6,18 +6,25 @@
 # Git code based on https://github.com/joeytwiddle/git-aware-prompt/blob/master/prompt.sh
 # More info about color codes in https://en.wikipedia.org/wiki/ANSI_escape_code
 
+readonly MULTILINE="YES" # set to "YES" to put add a \n before and after the prompt
+readonly SHORT_USER_INFO="YES" # set to "YES" to omit the hostname
+readonly SHORT_CWD="YES" # set to "YES" to show only the basename of the CWD
+readonly PADDING=" " # use this character sequence to pad the segments around the separators
 
 readonly PROMPT_CHAR=${POWERLINE_PROMPT_CHAR:="\n"}
-readonly POWERLINE_LEFT_SEPARATOR=" "
-readonly POWERLINE_PROMPT="last_status venv user_info cwd scm"
+readonly POWERLINE_LEFT_SEPARATOR="${PADDING}"
+readonly POWERLINE_PROMPT="last_status venv user_info cwd npm scm"
 
-readonly USER_INFO_SSH_CHAR=" "
-readonly USER_INFO_PROMPT_COLOR="C B"
+readonly USER_INFO_SSH_CHAR="${PADDING}"
+readonly USER_INFO_PROMPT_COLOR="C Bl"
 
 readonly VENV_PROMPT_COLOR="M Y"
 readonly PYTHON_SYMBOL=''
 
 readonly SCM_GIT_CHAR=" "
+readonly NPM_PROMPT_COLOR="Y Bl"
+
+readonly SCM_GIT_CHAR="${PADDING}"
 readonly SCM_PROMPT_CLEAN=""
 readonly SCM_PROMPT_DIRTY="*"
 readonly SCM_PROMPT_AHEAD="↑"
@@ -31,7 +38,7 @@ readonly SCM_PROMPT_UNSTAGED_COLOR="R Bl"
 readonly SCM_PROMPT_COLOR=${SCM_PROMPT_CLEAN_COLOR}
 
 readonly CWD_PROMPT_COLOR="B C"
-
+readonly CWD_PROMPT_COLOR="B Bl"
 readonly STATUS_PROMPT_COLOR="Bl R B"
 readonly STATUS_PROMPT_ERROR="✘"
 readonly STATUS_PROMPT_ERROR_COLOR="Bl R B"
@@ -81,16 +88,70 @@ function __color {
 function __powerline_user_info_prompt {
   local user_info=""
   local color=${USER_INFO_PROMPT_COLOR}
+  local hostname_escape="@\\h"
+  [[ "$SHORT_USER_INFO" == "YES" ]] && hostname_escape=""
   if [[ -n "${SSH_CLIENT}" ]]; then
-    user_info="${USER_INFO_SSH_CHAR}\u@\h"
+    user_info="${USER_INFO_SSH_CHAR}\u${hostname_escape}"
   else
-    user_info="\u@\h"
+    user_info="\u${hostname_escape}"
   fi
-  [[ -n "${user_info}" ]] && echo "${user_info}|${color}"
+  [[ -n "${user_info}" ]] && echo "${PADDING}${user_info}${PADDING}|${color}"
 }
 
 function __powerline_cwd_prompt {
-  echo "\w|${CWD_PROMPT_COLOR}"
+  local cwd_escape="\\w"
+  [[ "$SHORT_CWD" == "YES" ]] && cwd_escape="\\W"
+  echo "${cwd_escape}${PADDING}|${CWD_PROMPT_COLOR}"
+}
+
+function __powerline_npm_prompt {
+  npm_package_file_name="package.json"
+  npm_package_file=""
+  git_top_level=""
+  npm_name=""
+  npm_version=""
+
+  find_git_top_level() {
+    git_top_level=$(git rev-parse --show-toplevel 2> /dev/null)
+    return 0
+  }
+
+  find_npm_package_file() {
+    npm_package_file="$npm_package_file_name"
+    if [ -n "$git_top_level" ]; then
+      git_top_level=$(sed 's/\([A-Za-z]\):/\/\L\1/' <<< "${git_top_level}")
+      npm_package_file="${git_top_level}/${npm_package_file}"
+    fi
+    if [ ! -f "$npm_package_file" ]; then
+      npm_package_file=""
+      return 1
+    fi
+  }
+
+  find_npm_name() {
+    if [[ -n "$npm_package_file" ]]; then
+      npm_name=$(awk -F '"' '/name/ {print $4}' $npm_package_file)
+    fi
+  }
+
+  find_npm_version() {
+    if [[ -n "$npm_package_file" ]]; then
+      npm_version=$(awk -F '"' '/version/ {print $4}' $npm_package_file)
+    fi
+  }
+
+  local color
+  local npm_info
+
+  find_git_top_level && find_npm_package_file && find_npm_name && find_npm_version
+
+  # not in NPM package
+  [[ -z "$npm_package_file" ]] && return
+
+  npm_info="${npm_name}@${npm_version}"
+  color=${NPM_PROMPT_COLOR}
+
+  [[ "$npm_info" != "@" ]] && echo "${npm_info}${PADDING}|${color}"
 }
 
 function __powerline_venv_prompt {
@@ -177,7 +238,7 @@ function __powerline_scm_prompt {
   [[ -n "$git_behind" ]] && scm_info+="${SCM_PROMPT_BEHIND}${git_behind_count}"
   [[ -n "$git_ahead" ]] && scm_info+="${SCM_PROMPT_AHEAD}${git_ahead_count}"
 
-  [[ -n "${scm_info}" ]] && echo "${scm_info}|${color}"
+  [[ -n "${scm_info}" ]] && echo "${scm_info}${PADDING}|${color}"
 }
 
 function __powerline_left_segment {
@@ -216,6 +277,7 @@ function __powerline_last_status_prompt {
 function __powerline_prompt_command {
   local last_status="$?" ## always the first
   local separator_char="${POWERLINE_PROMPT_CHAR}"
+  [[ "$MULTILINE" == "YES" ]] && separator_char="${POWERLINE_LEFT_SEPARATOR}"
 
   LEFT_PROMPT=""
   SEGMENTS_AT_LEFT=0
@@ -228,7 +290,9 @@ function __powerline_prompt_command {
   done
 
   [[ -n "${LEFT_PROMPT}" ]] && LEFT_PROMPT+="$(__color - ${LAST_SEGMENT_COLOR})${separator_char}$(__color)"
-  PS1="${LEFT_PROMPT} "
+  [[ "$MULTILINE" == "YES" ]] \
+    && PS1="\n${LEFT_PROMPT}\n\$ " \
+    || PS1="${LEFT_PROMPT} "
 
   ## cleanup ##
   unset LAST_SEGMENT_COLOR \
