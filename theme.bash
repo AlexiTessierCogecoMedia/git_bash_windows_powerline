@@ -13,7 +13,7 @@ readonly PADDING=" " # use this character sequence to pad the segments around th
 
 readonly PROMPT_CHAR=${POWERLINE_PROMPT_CHAR:="\n"}
 readonly POWERLINE_LEFT_SEPARATOR="${PADDING}"
-readonly POWERLINE_PROMPT="last_status venv user_info cwd npm scm"
+readonly POWERLINE_PROMPT="last_status venv user_info cwd scm"
 
 readonly USER_INFO_SSH_CHAR="${PADDING}"
 readonly USER_INFO_PROMPT_COLOR="C Bl"
