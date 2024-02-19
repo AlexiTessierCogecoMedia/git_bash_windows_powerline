@@ -7,7 +7,7 @@
 # More info about color codes in https://en.wikipedia.org/wiki/ANSI_escape_code
 
 
-readonly PROMPT_CHAR=${POWERLINE_PROMPT_CHAR:=""}
+readonly PROMPT_CHAR=${POWERLINE_PROMPT_CHAR:="\n"}
 readonly POWERLINE_LEFT_SEPARATOR=" "
 readonly POWERLINE_PROMPT="last_status venv user_info cwd scm"
 
